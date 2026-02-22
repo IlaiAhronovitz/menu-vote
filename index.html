@@ -7,935 +7,419 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; font-family: 'Heebo', 'Rubik', sans-serif; direction: rtl; background: linear-gradient(165deg, #fafafa 0%, #f0f0f0 100%); min-height: 100vh; }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    @keyframes shimmer {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    @keyframes confetti {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
-    }
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
-    .menu-card {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-    }
-    .menu-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-    }
+    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a2e; }
+    .loading-spinner { font-size: 48px; animation: spin 1s linear infinite; }
 
-    .vote-btn {
-      transition: all 0.2s ease;
-      cursor: pointer;
-      border: none;
-      outline: none;
-    }
-    .vote-btn:hover {
-      transform: scale(1.05);
-      filter: brightness(1.1);
-    }
-    .vote-btn:active {
-      transform: scale(0.97);
-    }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 40px 20px 30px; text-align: center; }
+    .header-emoji { font-size: 42px; animation: float 3s ease-in-out infinite; display: inline-block; }
+    .header h1 { font-family: 'Rubik', sans-serif; font-size: 28px; font-weight: 800; color: #fff; margin: 12px 0 4px; letter-spacing: -0.5px; }
+    .header-sub { color: #E63946; font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+    .header-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(230,57,70,0.15); color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid rgba(230,57,70,0.3); }
 
-    .expand-btn {
-      transition: all 0.2s ease;
-      cursor: pointer;
-      background: none;
-      border: none;
-      outline: none;
-    }
-    .expand-btn:hover {
-      opacity: 0.8;
-    }
+    .section { padding: 16px 16px 0; max-width: 600px; margin: 0 auto; }
 
-    .name-input {
-      direction: rtl;
-      text-align: right;
-    }
-    .name-input:focus {
-      outline: none;
-      border-color: #E63946;
-      box-shadow: 0 0 0 3px rgba(230,57,70,0.15);
-    }
+    .name-label { display: block; font-size: 15px; font-weight: 600; color: #333; margin-bottom: 8px; margin-top: 20px; }
+    .name-input { width: 100%; padding: 12px 16px; font-size: 16px; border-radius: 12px; border: 2px solid #e0e0e0; font-family: 'Heebo', sans-serif; background: #fff; direction: rtl; text-align: right; transition: all 0.2s ease; }
+    .name-input:focus { outline: none; border-color: #E63946; box-shadow: 0 0 0 3px rgba(230,57,70,0.15); }
 
-    .results-toggle {
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-    .results-toggle:hover {
-      background: rgba(255,255,255,0.15) !important;
-    }
+    .voted-banner { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 16px; margin: 16px auto 0; max-width: 568px; background: linear-gradient(135deg, #d4edda, #c3e6cb); border-radius: 14px; font-size: 15px; font-weight: 600; color: #155724; text-align: center; }
 
-    .progress-bar {
-      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    .results-toggle { width: 100%; padding: 10px 16px; margin-top: 12px; background: rgba(26,26,46,0.08); border: none; border-radius: 10px; font-size: 14px; font-weight: 600; color: #333; cursor: pointer; font-family: 'Heebo', sans-serif; transition: background 0.2s; }
+    .results-toggle:hover { background: rgba(26,26,46,0.14); }
+
+    .common-banner { margin: 16px auto 8px; padding: 16px 18px; max-width: 568px; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .common-title { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
+    .common-item { font-size: 13px; color: #555; padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+
+    .cards-grid { display: flex; flex-direction: column; gap: 14px; padding: 12px 16px; max-width: 600px; margin: 0 auto; }
+
+    .menu-card { border-radius: 18px; box-shadow: 0 2px 16px rgba(0,0,0,0.07); overflow: hidden; position: relative; background: #fff; border: 3px solid transparent; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); cursor: pointer; }
+    .menu-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
+
+    .winner-badge { position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #FFD700, #FFA500); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px; z-index: 2; box-shadow: 0 2px 8px rgba(255,165,0,0.3); }
+    .my-vote-badge { position: absolute; top: 12px; left: 12px; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px; z-index: 2; }
+
+    .card-header { padding: 18px 18px 10px; }
+    .card-top { display: flex; align-items: center; gap: 12px; }
+    .menu-emoji-box { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 28px; }
+    .card-title-area { flex: 1; text-align: right; }
+    .menu-name { font-size: 17px; font-weight: 700; color: #1a1a2e; font-family: 'Rubik', sans-serif; margin-bottom: 4px; }
+    .category-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; }
+    .expand-icon { font-size: 12px; color: #aaa; padding: 8px; background: none; border: none; cursor: pointer; transition: transform 0.3s ease; }
+    .main-dish { font-size: 14px; color: #666; font-weight: 500; margin-top: 10px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
+
+    .vote-bar-container { position: relative; height: 24px; background: #f0f0f0; border-radius: 12px; margin-top: 10px; overflow: hidden; }
+    .vote-bar { position: absolute; top: 0; right: 0; height: 100%; border-radius: 12px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .vote-count { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: #333; direction: ltr; }
+    .voter-names { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .voter-chip { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px; border: 1px solid; background: rgba(255,255,255,0.8); }
+
+    .expanded-content { padding: 0 18px 8px; animation: slideUp 0.3s ease; }
+    .detail-section { margin-bottom: 10px; }
+    .detail-label { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 4px; }
+    .detail-text { font-size: 13px; color: #666; line-height: 1.6; }
+    .side-item { font-size: 13px; color: #666; padding: 2px 0; }
+
+    .vote-btn { width: calc(100% - 36px); margin: 4px 18px 16px; padding: 12px 16px; border-radius: 12px; color: #fff; font-size: 15px; font-weight: 700; font-family: 'Heebo', sans-serif; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.15); transition: all 0.2s ease; display: block; }
+    .vote-btn:hover:not(:disabled) { transform: scale(1.03); filter: brightness(1.1); }
+    .vote-btn:active:not(:disabled) { transform: scale(0.97); }
+    .vote-btn:disabled { cursor: not-allowed; }
+
+    .footer { text-align: center; padding: 30px 16px 10px; color: #888; font-size: 12px; opacity: 0.6; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect, useCallback, useRef } = React;
 
-    const BLOB_ID = "019c85ea-9ebd-7424-ad89-10d7582d12f0";
-    const BLOB_URL = `https://jsonblob.com/api/jsonBlob/${BLOB_ID}`;
+<div id="app"></div>
 
-    // Shared storage helpers
-    const sharedStorage = {
-      async getVotes() {
-        try {
-          const res = await fetch(BLOB_URL, {
-            headers: { "Accept": "application/json" }
-          });
-          const data = await res.json();
-          return data.votes || {};
-        } catch (e) {
-          console.error("Failed to fetch votes:", e);
-          return {};
-        }
-      },
-      async saveVotes(votes) {
-        try {
-          const res = await fetch(BLOB_URL, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({ votes })
-          });
-          return await res.json();
-        } catch (e) {
-          console.error("Failed to save votes:", e);
-        }
-      }
-    };
+<script>
+const BLOB_ID = "019c85ea-9ebd-7424-ad89-10d7582d12f0";
+const BLOB_URL = "https://jsonblob.com/api/jsonBlob/" + BLOB_ID;
 
-    const MENUS = [
-      {
-        id: 1,
-        name: "אמריקה 🍔",
-        emoji: "🇺🇸",
-        color: "#E63946",
-        main: "המבורגרים 180 גרם",
-        description: "המבורגרים עסיסיים מבשר אדום ועשבי תיבול טריים על פלנצ'ה לוהטת, בלחמנייה מתוקה עם חסה, עגבניה, בצל ומלפפון חמוץ",
-        sides: ["פוטטו אמריקאי סטייל מקדונלדס", "חרדל, קטשופ, אלף האיים"],
-        category: "בשרי",
-      },
-      {
-        id: 2,
-        name: "הוט דוג בר 🌭",
-        emoji: "🌭",
-        color: "#E9C46A",
-        main: "הוט דוג בר",
-        description: "מיני נקניקיות בלחמניות באניס טריות עם חרדל, קטשופ, צ'ימיצ'ורי וכרוב כבוש. נקניקיות צ'וריסוס בגריל ונקניקיות עוף קראנצ'יות",
-        sides: ["פוטטו אמריקאי סטייל מקדונלדס", "חרדל, קטשופ, אלף האיים"],
-        category: "בשרי",
-      },
-      {
-        id: 3,
-        name: "שניצל סטיישן 🍗",
-        emoji: "🍗",
-        color: "#F4A261",
-        main: "שניצל סטיישן",
-        description: "נתחי חזה עוף בציפוי פריך בלחמניית חלה מתוקה עם מטבוחה חמה, טבעות חציל קלוי, חמוצי הבית וטחינה הר ברכה",
-        sides: ["פוטטו אמריקאי סטייל מקדונלדס", "חרדל, קטשופ, אלף האיים"],
-        category: "בשרי",
-      },
-      {
-        id: 4,
-        name: 'אסאדו "פאן" סטיישן 🥩',
-        emoji: "🥩",
-        color: "#8B2500",
-        main: '"פאן" סטיישן',
-        description: "לחמניית פרנה מיוחדת ונימוחה במילוי אסאדו מפורק וסלט קולסלאו אמריקאי",
-        sides: ["פוטטו אמריקאי סטייל מקדונלדס", "חרדל, קטשופ, אלף האיים"],
-        category: "בשרי",
-      },
-      {
-        id: 5,
-        name: "פיצה איטלקית 🍕",
-        emoji: "🍕",
-        color: "#2A9D8F",
-        main: "פיצה סטיישן",
-        description: "פיצה נאפוליטנית 100% מוצרלה – מרגריטה עם רוטב עגבניות, בזיל ומוצרלה. תוספות: זיתים, בצל, תירס ופטריות. אפייה מול עיני האורחים",
-        sides: ["נצרי ירקות בקונוס – גזר, מלפפון, שרי, תירס, פלפלים עם מתבל שף"],
-        category: "חלבי",
-      },
-      {
-        id: 6,
-        name: "פיש & צ'יפס 🐟",
-        emoji: "🐟",
-        color: "#457B9D",
-        main: "פיש & צ'יפס",
-        description: "נתחוני פילה דג קוד מצופים בטמפורה מוגשים לצד פוטטו פריך, רוטב איולי צ'יפוטלה ואיולי צ'ילי",
-        sides: [],
-        category: "חלבי",
-      },
-      {
-        id: 7,
-        name: "בורקס רמלה 🥟",
-        emoji: "🥟",
-        color: "#6D4C41",
-        main: "בורקס רמלה",
-        description: "שושני בורקס טורקי באפיה טרייה בסמוך לאירוע, במגוון טעמים: תרד, תפוח אדמה וגבינה. מוגש עם טחינה, סלסה פיקנטית, סלסה עגבניות תמר, קורנישון וביצים",
-        sides: [],
-        category: "חלבי",
-      },
-      {
-        id: 8,
-        name: "בייסיק – שתייה ונשנושים 🍿",
-        emoji: "🍿",
-        color: "#264653",
-        main: "חבילת בייסיק",
-        description: "בר שתייה + נשנושים בלבד: פיצוחים, נאצ'וס, פופקורן וממתקי שוק. ללא מנה עיקרית.",
-        sides: [],
-        category: "פרווה",
-      },
-    ];
+const MENUS = [
+  { id:1, name:"אמריקה 🍔", emoji:"🇺🇸", color:"#E63946", main:"המבורגרים 180 גרם", description:"המבורגרים עסיסיים מבשר אדום ועשבי תיבול טריים על פלנצ'ה לוהטת, בלחמנייה מתוקה עם חסה, עגבניה, בצל ומלפפון חמוץ", sides:["פוטטו אמריקאי סטייל מקדונלדס","חרדל, קטשופ, אלף האיים"], category:"בשרי" },
+  { id:2, name:"הוט דוג בר 🌭", emoji:"🌭", color:"#E9C46A", main:"הוט דוג בר", description:"מיני נקניקיות בלחמניות באניס טריות עם חרדל, קטשופ, צ'ימיצ'ורי וכרוב כבוש. נקניקיות צ'וריסוס בגריל ונקניקיות עוף קראנצ'יות", sides:["פוטטו אמריקאי סטייל מקדונלדס","חרדל, קטשופ, אלף האיים"], category:"בשרי" },
+  { id:3, name:"שניצל סטיישן 🍗", emoji:"🍗", color:"#F4A261", main:"שניצל סטיישן", description:"נתחי חזה עוף בציפוי פריך בלחמניית חלה מתוקה עם מטבוחה חמה, טבעות חציל קלוי, חמוצי הבית וטחינה הר ברכה", sides:["פוטטו אמריקאי סטייל מקדונלדס","חרדל, קטשופ, אלף האיים"], category:"בשרי" },
+  { id:4, name:'אסאדו "פאן" סטיישן 🥩', emoji:"🥩", color:"#8B2500", main:'"פאן" סטיישן', description:"לחמניית פרנה מיוחדת ונימוחה במילוי אסאדו מפורק וסלט קולסלאו אמריקאי", sides:["פוטטו אמריקאי סטייל מקדונלדס","חרדל, קטשופ, אלף האיים"], category:"בשרי" },
+  { id:5, name:"פיצה איטלקית 🍕", emoji:"🍕", color:"#2A9D8F", main:"פיצה סטיישן", description:"פיצה נאפוליטנית 100% מוצרלה – מרגריטה עם רוטב עגבניות, בזיל ומוצרלה. תוספות: זיתים, בצל, תירס ופטריות. אפייה מול עיני האורחים", sides:["נצרי ירקות בקונוס – גזר, מלפפון, שרי, תירס, פלפלים עם מתבל שף"], category:"חלבי" },
+  { id:6, name:"פיש & צ'יפס 🐟", emoji:"🐟", color:"#457B9D", main:"פיש & צ'יפס", description:"נתחוני פילה דג קוד מצופים בטמפורה מוגשים לצד פוטטו פריך, רוטב איולי צ'יפוטלה ואיולי צ'ילי", sides:[], category:"חלבי" },
+  { id:7, name:"בורקס רמלה 🥟", emoji:"🥟", color:"#6D4C41", main:"בורקס רמלה", description:"שושני בורקס טורקי באפיה טרייה בסמוך לאירוע, במגוון טעמים: תרד, תפוח אדמה וגבינה. מוגש עם טחינה, סלסה פיקנטית, סלסה עגבניות תמר, קורנישון וביצים", sides:[], category:"חלבי" },
+  { id:8, name:"בייסיק – שתייה ונשנושים 🍿", emoji:"🍿", color:"#264653", main:"חבילת בייסיק", description:"בר שתייה + נשנושים בלבד: פיצוחים, נאצ'וס, פופקורן וממתקי שוק. ללא מנה עיקרית.", sides:[], category:"פרווה" },
+];
 
-    const COMMON_ITEMS = {
-      drinks: "שתייה קלה (קוקה קולה) + בירה קרלסברג/טובורג",
-      snacks: "פיצוחים, נאצ'וס, פופקורן, ממתקי שוק",
-      dessert: "מיקס פטיפורים (בין הרבע ה-3 ל-4)",
-    };
+// ---------- State ----------
+let state = {
+  votes: {},
+  voterName: "",
+  hasVoted: false,
+  myVote: null,
+  expandedCard: null,
+  loading: true,
+  showResults: false,
+  submitting: false,
+};
 
-    function MenuVote() {
-      const [votes, setVotes] = useState({});
-      const [voterName, setVoterName] = useState("");
-      const [hasVoted, setHasVoted] = useState(false);
-      const [myVote, setMyVote] = useState(null);
-      const [expandedCard, setExpandedCard] = useState(null);
-      const [loading, setLoading] = useState(true);
-      const [showResults, setShowResults] = useState(false);
-      const [animateIn, setAnimateIn] = useState(false);
-      const [submitting, setSubmitting] = useState(false);
-      const pollRef = useRef(null);
+// ---------- Storage ----------
+async function fetchVotes() {
+  try {
+    const res = await fetch(BLOB_URL, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    return data.votes || {};
+  } catch(e) {
+    console.error("fetchVotes error", e);
+    return {};
+  }
+}
 
-      // Load votes from shared storage + local vote info
-      useEffect(() => {
-        const loadData = async () => {
-          const remoteVotes = await sharedStorage.getVotes();
-          setVotes(remoteVotes);
+async function saveVotes(votes) {
+  try {
+    await fetch(BLOB_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ votes })
+    });
+  } catch(e) {
+    console.error("saveVotes error", e);
+  }
+}
 
-          // Check if current user already voted (stored locally)
-          try {
-            const saved = localStorage.getItem("my-menu-vote");
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              setHasVoted(true);
-              setMyVote(parsed.menuId);
-              setVoterName(parsed.name);
-            }
-          } catch (e) {}
+// ---------- Helpers ----------
+function getTotalVotes() {
+  return Object.values(state.votes).reduce((s, arr) => s + arr.length, 0);
+}
+function getMenuVotes(menuId) {
+  return state.votes[String(menuId)] || [];
+}
+function getWinner() {
+  let maxV = 0, winnerId = null;
+  for (const [id, voters] of Object.entries(state.votes)) {
+    if (voters.length > maxV) { maxV = voters.length; winnerId = Number(id); }
+  }
+  return winnerId;
+}
 
-          setLoading(false);
-          setTimeout(() => setAnimateIn(true), 100);
-        };
-        loadData();
+// ---------- Vote ----------
+async function submitVote(menuId) {
+  if (!state.voterName.trim() || state.submitting) return;
+  state.submitting = true;
+  render();
 
-        // Poll for updated votes every 10 seconds
-        pollRef.current = setInterval(async () => {
-          const remoteVotes = await sharedStorage.getVotes();
-          setVotes(remoteVotes);
-        }, 10000);
+  const latest = await fetchVotes();
+  const newVotes = { ...latest };
 
-        return () => clearInterval(pollRef.current);
-      }, []);
-
-      const submitVote = useCallback(
-        async (menuId) => {
-          if (!voterName.trim() || submitting) return;
-          setSubmitting(true);
-
-          try {
-            // Fetch latest votes to avoid race conditions
-            const latestVotes = await sharedStorage.getVotes();
-            const newVotes = { ...latestVotes };
-
-            // Remove previous vote if exists
-            if (myVote) {
-              const prevKey = String(myVote);
-              if (newVotes[prevKey]) {
-                newVotes[prevKey] = newVotes[prevKey].filter(
-                  (v) => v !== voterName.trim()
-                );
-                if (newVotes[prevKey].length === 0) delete newVotes[prevKey];
-              }
-            }
-
-            const key = String(menuId);
-            if (!newVotes[key]) newVotes[key] = [];
-            // Prevent duplicate names on same option
-            if (!newVotes[key].includes(voterName.trim())) {
-              newVotes[key].push(voterName.trim());
-            }
-
-            await sharedStorage.saveVotes(newVotes);
-
-            setVotes(newVotes);
-            setMyVote(menuId);
-            setHasVoted(true);
-
-            localStorage.setItem(
-              "my-menu-vote",
-              JSON.stringify({ menuId, name: voterName.trim() })
-            );
-          } catch (e) {
-            console.error("Vote error:", e);
-          } finally {
-            setSubmitting(false);
-          }
-        },
-        [votes, voterName, myVote, submitting]
-      );
-
-      const getTotalVotes = () => {
-        return Object.values(votes).reduce((sum, arr) => sum + arr.length, 0);
-      };
-
-      const getMenuVotes = (menuId) => {
-        return votes[String(menuId)] || [];
-      };
-
-      const getWinner = () => {
-        let maxVotes = 0;
-        let winnerId = null;
-        for (const [id, voters] of Object.entries(votes)) {
-          if (voters.length > maxVotes) {
-            maxVotes = voters.length;
-            winnerId = Number(id);
-          }
-        }
-        return winnerId;
-      };
-
-      if (loading) {
-        return (
-          <div style={styles.loadingScreen}>
-            <div style={styles.loadingSpinner}>🏀</div>
-            <p style={{ color: "#fff", fontFamily: "inherit", marginTop: 16 }}>
-              טוען...
-            </p>
-          </div>
-        );
-      }
-
-      const winner = getWinner();
-      const total = getTotalVotes();
-
-      return (
-        <div style={styles.container}>
-          {/* Header */}
-          <div
-            style={{
-              ...styles.header,
-              opacity: animateIn ? 1 : 0,
-              transform: animateIn ? "translateY(0)" : "translateY(-20px)",
-              transition: "all 0.6s ease",
-            }}
-          >
-            <div style={styles.headerBg}>
-              <div style={styles.headerContent}>
-                <div
-                  style={{
-                    fontSize: 42,
-                    animation: "float 3s ease-in-out infinite",
-                  }}
-                >
-                  🏀
-                </div>
-                <h1 style={styles.title}>תפריט תאי צפייה</h1>
-                <p style={styles.subtitle}>עונת 2025-2026</p>
-                <div style={styles.badge}>
-                  <span style={{ fontSize: 13 }}>🔴</span> הצביעו לתפריט המועדף
-                  עליכם
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Name Input */}
-          {!hasVoted && (
-            <div
-              style={{
-                ...styles.nameSection,
-                opacity: animateIn ? 1 : 0,
-                transform: animateIn ? "translateY(0)" : "translateY(20px)",
-                transition: "all 0.6s ease 0.2s",
-              }}
-            >
-              <label style={styles.nameLabel}>מה השם שלך?</label>
-              <input
-                className="name-input"
-                type="text"
-                placeholder="הכניסו את השם שלכם..."
-                value={voterName}
-                onChange={(e) => setVoterName(e.target.value)}
-                style={styles.nameInput}
-              />
-            </div>
-          )}
-
-          {hasVoted && (
-            <div
-              style={{
-                ...styles.votedBanner,
-                opacity: animateIn ? 1 : 0,
-                transition: "all 0.4s ease",
-              }}
-            >
-              <span style={{ fontSize: 20 }}>✅</span>
-              <span>
-                {voterName}, הצבעת ל
-                {MENUS.find((m) => m.id === myVote)?.name}
-              </span>
-              <span style={{ fontSize: 12, opacity: 0.7 }}>
-                (אפשר לשנות בלחיצה על אפשרות אחרת)
-              </span>
-            </div>
-          )}
-
-          {/* Results Toggle */}
-          {total > 0 && (
-            <div style={{ padding: "0 16px", maxWidth: 600, margin: "0 auto" }}>
-              <button
-                className="results-toggle"
-                onClick={() => setShowResults(!showResults)}
-                style={styles.resultsToggle}
-              >
-                <span>{showResults ? "🙈 הסתר תוצאות" : `📊 הצג תוצאות (${total} הצבעות)`}</span>
-              </button>
-            </div>
-          )}
-
-          {/* Common Items Banner */}
-          <div
-            style={{
-              ...styles.commonBanner,
-              opacity: animateIn ? 1 : 0,
-              transform: animateIn ? "translateY(0)" : "translateY(20px)",
-              transition: "all 0.6s ease 0.3s",
-            }}
-          >
-            <div style={styles.commonTitle}>🍻 מה כולם מקבלים?</div>
-            <div style={styles.commonItem}>
-              <span style={styles.commonIcon}>🥤</span> {COMMON_ITEMS.drinks}
-            </div>
-            <div style={styles.commonItem}>
-              <span style={styles.commonIcon}>🍿</span> {COMMON_ITEMS.snacks}
-            </div>
-            <div style={styles.commonItem}>
-              <span style={styles.commonIcon}>🍰</span> {COMMON_ITEMS.dessert}
-            </div>
-          </div>
-
-          {/* Menu Cards */}
-          <div style={styles.cardsGrid}>
-            {MENUS.map((menu, index) => {
-              const menuVotes = getMenuVotes(menu.id);
-              const isExpanded = expandedCard === menu.id;
-              const isMyVote = myVote === menu.id;
-              const isWinner = winner === menu.id && total >= 2;
-              const votePercent =
-                total > 0 ? Math.round((menuVotes.length / total) * 100) : 0;
-
-              return (
-                <div
-                  key={menu.id}
-                  className="menu-card"
-                  style={{
-                    ...styles.card,
-                    opacity: animateIn ? 1 : 0,
-                    transform: animateIn ? "translateY(0)" : "translateY(30px)",
-                    transition: `all 0.5s ease ${0.1 * index + 0.3}s`,
-                    border: isMyVote
-                      ? `3px solid ${menu.color}`
-                      : "3px solid transparent",
-                    background: isMyVote
-                      ? `linear-gradient(white, white) padding-box, linear-gradient(135deg, ${menu.color}, ${menu.color}88) border-box`
-                      : "#fff",
-                  }}
-                >
-                  {isWinner && (
-                    <div style={styles.winnerBadge}>
-                      👑 מוביל
-                    </div>
-                  )}
-
-                  {isMyVote && (
-                    <div
-                      style={{ ...styles.myVoteBadge, background: menu.color }}
-                    >
-                      ✓ הבחירה שלי
-                    </div>
-                  )}
-
-                  <div
-                    onClick={() =>
-                      setExpandedCard(isExpanded ? null : menu.id)
-                    }
-                    style={styles.cardHeader}
-                  >
-                    <div style={styles.cardTop}>
-                      <div
-                        style={{
-                          ...styles.menuEmoji,
-                          background: `${menu.color}15`,
-                        }}
-                      >
-                        <span style={{ fontSize: 28 }}>{menu.emoji}</span>
-                      </div>
-                      <div style={{ flex: 1, textAlign: "right" }}>
-                        <h3 style={styles.menuName}>{menu.name}</h3>
-                        <div style={styles.menuMeta}>
-                          <span
-                            style={{
-                              ...styles.categoryBadge,
-                              background: `${menu.color}18`,
-                              color: menu.color,
-                            }}
-                          >
-                            {menu.category}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        className="expand-btn"
-                        style={{
-                          ...styles.expandIcon,
-                          transform: isExpanded
-                            ? "rotate(180deg)"
-                            : "rotate(0deg)",
-                        }}
-                      >
-                        ▼
-                      </button>
-                    </div>
-
-                    <p style={styles.mainDish}>{menu.main}</p>
-
-                    {/* Vote bar */}
-                    {showResults && menuVotes.length > 0 && (
-                      <div style={styles.voteBarContainer}>
-                        <div
-                          className="progress-bar"
-                          style={{
-                            ...styles.voteBar,
-                            width: `${Math.max(votePercent, 8)}%`,
-                            background: `linear-gradient(90deg, ${menu.color}, ${menu.color}cc)`,
-                          }}
-                        />
-                        <span style={styles.voteCount}>
-                          {menuVotes.length} ({votePercent}%)
-                        </span>
-                      </div>
-                    )}
-
-                    {showResults && menuVotes.length > 0 && (
-                      <div style={styles.voterNames}>
-                        {menuVotes.map((name, i) => (
-                          <span key={i} style={{ ...styles.voterChip, borderColor: menu.color, color: menu.color }}>
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Expanded Details */}
-                  {isExpanded && (
-                    <div style={styles.expandedContent}>
-                      <div style={styles.detailSection}>
-                        <div style={styles.detailLabel}>📋 תיאור</div>
-                        <p style={styles.detailText}>{menu.description}</p>
-                      </div>
-                      {menu.sides.length > 0 && (
-                        <div style={styles.detailSection}>
-                          <div style={styles.detailLabel}>🍟 תוספות</div>
-                          {menu.sides.map((side, i) => (
-                            <p key={i} style={styles.sideItem}>
-                              • {side}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Vote Button */}
-                  {voterName.trim() && (
-                    <button
-                      className="vote-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        submitVote(menu.id);
-                      }}
-                      disabled={submitting}
-                      style={{
-                        ...styles.voteButton,
-                        background: isMyVote
-                          ? menu.color
-                          : `linear-gradient(135deg, ${menu.color}, ${menu.color}dd)`,
-                        opacity: submitting ? 0.6 : isMyVote ? 1 : 0.9,
-                      }}
-                    >
-                      {submitting ? "שולח..." : isMyVote ? "✓ בחרת באפשרות הזו" : "הצבע לתפריט הזה 🗳️"}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer */}
-          <div style={styles.footer}>
-            <p style={{ opacity: 0.6, fontSize: 12 }}>
-              Daily Events • תאי צפייה עונת 2025-2026
-            </p>
-          </div>
-        </div>
-      );
+  if (state.myVote) {
+    const pk = String(state.myVote);
+    if (newVotes[pk]) {
+      newVotes[pk] = newVotes[pk].filter(v => v !== state.voterName.trim());
+      if (newVotes[pk].length === 0) delete newVotes[pk];
     }
+  }
 
-    const styles = {
-      container: {
-        direction: "rtl",
-        fontFamily: "'Heebo', 'Rubik', sans-serif",
-        minHeight: "100vh",
-        background: "linear-gradient(165deg, #fafafa 0%, #f0f0f0 100%)",
-        paddingBottom: 40,
-      },
-      loadingScreen: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "#1a1a2e",
-      },
-      loadingSpinner: {
-        fontSize: 48,
-        animation: "spin 1s linear infinite",
-      },
-      header: {
-        position: "relative",
-        overflow: "hidden",
-      },
-      headerBg: {
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-        padding: "40px 20px 30px",
-        position: "relative",
-      },
-      headerContent: {
-        textAlign: "center",
-        position: "relative",
-        zIndex: 1,
-      },
-      title: {
-        fontFamily: "'Rubik', sans-serif",
-        fontSize: 28,
-        fontWeight: 800,
-        color: "#fff",
-        margin: "12px 0 4px",
-        letterSpacing: "-0.5px",
-      },
-      subtitle: {
-        color: "#E63946",
-        fontSize: 16,
-        fontWeight: 600,
-        marginBottom: 14,
-      },
-      badge: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        background: "rgba(230, 57, 70, 0.15)",
-        color: "#fff",
-        padding: "6px 16px",
-        borderRadius: 20,
-        fontSize: 13,
-        fontWeight: 500,
-        border: "1px solid rgba(230, 57, 70, 0.3)",
-      },
-      nameSection: {
-        padding: "20px 16px 8px",
-        maxWidth: 600,
-        margin: "0 auto",
-      },
-      nameLabel: {
-        display: "block",
-        fontSize: 15,
-        fontWeight: 600,
-        color: "#333",
-        marginBottom: 8,
-      },
-      nameInput: {
-        width: "100%",
-        padding: "12px 16px",
-        fontSize: 16,
-        borderRadius: 12,
-        border: "2px solid #e0e0e0",
-        fontFamily: "'Heebo', sans-serif",
-        transition: "all 0.2s ease",
-        background: "#fff",
-      },
-      votedBanner: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 4,
-        padding: "14px 16px",
-        margin: "16px 16px 0",
-        maxWidth: 568,
-        marginLeft: "auto",
-        marginRight: "auto",
-        background: "linear-gradient(135deg, #d4edda, #c3e6cb)",
-        borderRadius: 14,
-        fontSize: 15,
-        fontWeight: 600,
-        color: "#155724",
-        textAlign: "center",
-      },
-      resultsToggle: {
-        width: "100%",
-        padding: "10px 16px",
-        marginTop: 12,
-        background: "rgba(26, 26, 46, 0.08)",
-        border: "none",
-        borderRadius: 10,
-        fontSize: 14,
-        fontWeight: 600,
-        color: "#333",
-        cursor: "pointer",
-        fontFamily: "'Heebo', sans-serif",
-      },
-      commonBanner: {
-        margin: "16px 16px 8px",
-        padding: "16px 18px",
-        maxWidth: 568,
-        marginLeft: "auto",
-        marginRight: "auto",
-        background: "#fff",
-        borderRadius: 16,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-      },
-      commonTitle: {
-        fontSize: 16,
-        fontWeight: 700,
-        color: "#1a1a2e",
-        marginBottom: 10,
-      },
-      commonItem: {
-        fontSize: 13,
-        color: "#555",
-        padding: "4px 0",
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-      },
-      commonIcon: {
-        fontSize: 14,
-        width: 20,
-        textAlign: "center",
-      },
-      cardsGrid: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-        padding: "12px 16px",
-        maxWidth: 600,
-        margin: "0 auto",
-      },
-      card: {
-        borderRadius: 18,
-        boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-        overflow: "hidden",
-        position: "relative",
-        background: "#fff",
-      },
-      winnerBadge: {
-        position: "absolute",
-        top: 12,
-        left: 12,
-        background: "linear-gradient(135deg, #FFD700, #FFA500)",
-        color: "#fff",
-        fontSize: 11,
-        fontWeight: 700,
-        padding: "4px 10px",
-        borderRadius: 8,
-        zIndex: 2,
-        boxShadow: "0 2px 8px rgba(255,165,0,0.3)",
-      },
-      myVoteBadge: {
-        position: "absolute",
-        top: 12,
-        left: 12,
-        color: "#fff",
-        fontSize: 11,
-        fontWeight: 700,
-        padding: "4px 10px",
-        borderRadius: 8,
-        zIndex: 2,
-      },
-      cardHeader: {
-        padding: "18px 18px 10px",
-      },
-      cardTop: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      },
-      menuEmoji: {
-        width: 52,
-        height: 52,
-        borderRadius: 14,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      },
-      menuName: {
-        fontSize: 17,
-        fontWeight: 700,
-        color: "#1a1a2e",
-        fontFamily: "'Rubik', sans-serif",
-        marginBottom: 4,
-      },
-      menuMeta: {
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-      },
-      categoryBadge: {
-        fontSize: 11,
-        fontWeight: 600,
-        padding: "2px 8px",
-        borderRadius: 6,
-      },
-      expandIcon: {
-        fontSize: 12,
-        color: "#aaa",
-        padding: 8,
-        transition: "transform 0.3s ease",
-      },
-      mainDish: {
-        fontSize: 14,
-        color: "#666",
-        fontWeight: 500,
-        marginTop: 10,
-        paddingTop: 8,
-        borderTop: "1px solid #f0f0f0",
-      },
-      voteBarContainer: {
-        position: "relative",
-        height: 24,
-        background: "#f0f0f0",
-        borderRadius: 12,
-        marginTop: 10,
-        overflow: "hidden",
-      },
-      voteBar: {
-        position: "absolute",
-        top: 0,
-        right: 0,
-        height: "100%",
-        borderRadius: 12,
-        minWidth: 30,
-      },
-      voteCount: {
-        position: "absolute",
-        left: 10,
-        top: "50%",
-        transform: "translateY(-50%)",
-        fontSize: 11,
-        fontWeight: 700,
-        color: "#333",
-        direction: "ltr",
-      },
-      voterNames: {
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 6,
-        marginTop: 8,
-      },
-      voterChip: {
-        fontSize: 11,
-        fontWeight: 500,
-        padding: "2px 8px",
-        borderRadius: 6,
-        border: "1px solid",
-        background: "rgba(255,255,255,0.8)",
-      },
-      expandedContent: {
-        padding: "0 18px 8px",
-        animation: "slideUp 0.3s ease",
-      },
-      detailSection: {
-        marginBottom: 10,
-      },
-      detailLabel: {
-        fontSize: 13,
-        fontWeight: 700,
-        color: "#444",
-        marginBottom: 4,
-      },
-      detailText: {
-        fontSize: 13,
-        color: "#666",
-        lineHeight: 1.6,
-      },
-      sideItem: {
-        fontSize: 13,
-        color: "#666",
-        padding: "2px 0",
-      },
-      voteButton: {
-        width: "calc(100% - 36px)",
-        margin: "4px 18px 16px",
-        padding: "12px 16px",
-        borderRadius: 12,
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: 700,
-        fontFamily: "'Heebo', sans-serif",
-        letterSpacing: "0.2px",
-        boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
-      },
-      footer: {
-        textAlign: "center",
-        padding: "30px 16px 10px",
-        color: "#888",
-        fontFamily: "'Heebo', sans-serif",
-      },
-    };
+  const key = String(menuId);
+  if (!newVotes[key]) newVotes[key] = [];
+  if (!newVotes[key].includes(state.voterName.trim())) {
+    newVotes[key].push(state.voterName.trim());
+  }
 
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<MenuVote />);
-  </script>
+  await saveVotes(newVotes);
+
+  state.votes = newVotes;
+  state.myVote = menuId;
+  state.hasVoted = true;
+  state.submitting = false;
+
+  try {
+    localStorage.setItem("my-menu-vote", JSON.stringify({ menuId, name: state.voterName.trim() }));
+  } catch(e) {}
+
+  render();
+}
+
+// ---------- Render ----------
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "style" && typeof v === "object") {
+        Object.assign(el.style, v);
+      } else if (k.startsWith("on") && typeof v === "function") {
+        el.addEventListener(k.slice(2).toLowerCase(), v);
+      } else if (k === "className") {
+        el.className = v;
+      } else if (k === "disabled") {
+        el.disabled = v;
+      } else {
+        el.setAttribute(k, v);
+      }
+    }
+  }
+  for (const child of children.flat()) {
+    if (child == null || child === false) continue;
+    el.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+  }
+  return el;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  if (state.loading) {
+    app.appendChild(
+      h("div", { className: "loading-screen" },
+        h("div", { className: "loading-spinner" }, "🏀"),
+        h("p", { style: { color: "#fff", fontFamily: "inherit", marginTop: "16px" } }, "טוען...")
+      )
+    );
+    return;
+  }
+
+  const total = getTotalVotes();
+  const winner = getWinner();
+
+  // Header
+  const header = h("div", { className: "header" },
+    h("div", { className: "header-emoji" }, "🏀"),
+    h("h1", null, "תפריט תאי צפייה"),
+    h("p", { className: "header-sub" }, "עונת 2025-2026"),
+    h("span", { className: "header-badge" }, "🔴 הצביעו לתפריט המועדף עליכם")
+  );
+
+  // Name input / voted banner
+  let nameSection;
+  if (!state.hasVoted) {
+    const input = h("input", {
+      className: "name-input",
+      type: "text",
+      placeholder: "הכניסו את השם שלכם...",
+    });
+    input.value = state.voterName;
+    input.addEventListener("input", e => { state.voterName = e.target.value; });
+    nameSection = h("div", { className: "section" },
+      h("label", { className: "name-label" }, "מה השם שלך?"),
+      input
+    );
+  } else {
+    const votedMenu = MENUS.find(m => m.id === state.myVote);
+    nameSection = h("div", { className: "voted-banner" },
+      h("span", { style: { fontSize: "20px" } }, "✅"),
+      h("span", null, state.voterName + ", הצבעת ל" + (votedMenu ? votedMenu.name : "")),
+      h("span", { style: { fontSize: "12px", opacity: "0.7" } }, "(אפשר לשנות בלחיצה על אפשרות אחרת)")
+    );
+  }
+
+  // Results toggle
+  let resultsToggle = null;
+  if (total > 0) {
+    const btn = h("div", { className: "section" },
+      h("button", {
+        className: "results-toggle",
+        onClick: () => { state.showResults = !state.showResults; render(); }
+      }, state.showResults ? "🙈 הסתר תוצאות" : `📊 הצג תוצאות (${total} הצבעות)`)
+    );
+    resultsToggle = btn;
+  }
+
+  // Common items
+  const common = h("div", { className: "common-banner" },
+    h("div", { className: "common-title" }, "🍻 מה כולם מקבלים?"),
+    h("div", { className: "common-item" }, h("span", null, "🥤"), " שתייה קלה (קוקה קולה) + בירה קרלסברג/טובורג"),
+    h("div", { className: "common-item" }, h("span", null, "🍿"), " פיצוחים, נאצ'וס, פופקורן, ממתקי שוק"),
+    h("div", { className: "common-item" }, h("span", null, "🍰"), " מיקס פטיפורים (בין הרבע ה-3 ל-4)")
+  );
+
+  // Cards
+  const grid = h("div", { className: "cards-grid" },
+    ...MENUS.map(menu => {
+      const menuVotes = getMenuVotes(menu.id);
+      const isExpanded = state.expandedCard === menu.id;
+      const isMyVote = state.myVote === menu.id;
+      const isWinner = winner === menu.id && total >= 2;
+      const votePercent = total > 0 ? Math.round((menuVotes.length / total) * 100) : 0;
+
+      const card = h("div", {
+        className: "menu-card",
+        style: {
+          border: isMyVote ? `3px solid ${menu.color}` : "3px solid transparent",
+        }
+      });
+
+      if (isWinner) card.appendChild(h("div", { className: "winner-badge" }, "👑 מוביל"));
+      if (isMyVote) {
+        const mb = h("div", { className: "my-vote-badge" }, "✓ הבחירה שלי");
+        mb.style.background = menu.color;
+        card.appendChild(mb);
+      }
+
+      // Card header (clickable to expand)
+      const cardHeader = h("div", {
+        className: "card-header",
+        onClick: () => { state.expandedCard = isExpanded ? null : menu.id; render(); }
+      });
+
+      const emojiBox = h("div", { className: "menu-emoji-box" }, menu.emoji);
+      emojiBox.style.background = menu.color + "15";
+
+      const catBadge = h("span", { className: "category-badge" }, menu.category);
+      catBadge.style.background = menu.color + "18";
+      catBadge.style.color = menu.color;
+
+      const expandIcon = h("button", { className: "expand-icon" }, "▼");
+      expandIcon.style.transform = isExpanded ? "rotate(180deg)" : "rotate(0deg)";
+
+      const cardTop = h("div", { className: "card-top" },
+        emojiBox,
+        h("div", { className: "card-title-area" },
+          h("div", { className: "menu-name" }, menu.name),
+          h("div", null, catBadge)
+        ),
+        expandIcon
+      );
+
+      cardHeader.appendChild(cardTop);
+      cardHeader.appendChild(h("p", { className: "main-dish" }, menu.main));
+
+      if (state.showResults && menuVotes.length > 0) {
+        const barContainer = h("div", { className: "vote-bar-container" });
+        const bar = h("div", { className: "vote-bar" });
+        bar.style.width = Math.max(votePercent, 8) + "%";
+        bar.style.background = `linear-gradient(90deg, ${menu.color}, ${menu.color}cc)`;
+        barContainer.appendChild(bar);
+        barContainer.appendChild(h("span", { className: "vote-count" }, `${menuVotes.length} (${votePercent}%)`));
+        cardHeader.appendChild(barContainer);
+
+        const voterNames = h("div", { className: "voter-names" },
+          ...menuVotes.map(name => {
+            const chip = h("span", { className: "voter-chip" }, name);
+            chip.style.borderColor = menu.color;
+            chip.style.color = menu.color;
+            return chip;
+          })
+        );
+        cardHeader.appendChild(voterNames);
+      }
+
+      card.appendChild(cardHeader);
+
+      // Expanded details
+      if (isExpanded) {
+        const expanded = h("div", { className: "expanded-content" },
+          h("div", { className: "detail-section" },
+            h("div", { className: "detail-label" }, "📋 תיאור"),
+            h("p", { className: "detail-text" }, menu.description)
+          ),
+          ...(menu.sides.length > 0 ? [
+            h("div", { className: "detail-section" },
+              h("div", { className: "detail-label" }, "🍟 תוספות"),
+              ...menu.sides.map(side => h("p", { className: "side-item" }, "• " + side))
+            )
+          ] : [])
+        );
+        card.appendChild(expanded);
+      }
+
+      // Vote button
+      if (state.voterName.trim()) {
+        const btn = h("button", {
+          className: "vote-btn",
+          disabled: state.submitting,
+          onClick: e => { e.stopPropagation(); submitVote(menu.id); }
+        }, state.submitting ? "שולח..." : isMyVote ? "✓ בחרת באפשרות הזו" : "הצבע לתפריט הזה 🗳️");
+        btn.style.background = isMyVote ? menu.color : `linear-gradient(135deg, ${menu.color}, ${menu.color}dd)`;
+        btn.style.opacity = state.submitting ? "0.6" : "1";
+        card.appendChild(btn);
+      }
+
+      return card;
+    })
+  );
+
+  const footer = h("div", { className: "footer" }, "Daily Events • תאי צפייה עונת 2025-2026");
+
+  app.appendChild(header);
+  app.appendChild(nameSection);
+  if (resultsToggle) app.appendChild(resultsToggle);
+  app.appendChild(common);
+  app.appendChild(grid);
+  app.appendChild(footer);
+}
+
+// ---------- Init ----------
+async function init() {
+  render(); // show loading
+
+  state.votes = await fetchVotes();
+
+  try {
+    const saved = localStorage.getItem("my-menu-vote");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state.hasVoted = true;
+      state.myVote = parsed.menuId;
+      state.voterName = parsed.name;
+    }
+  } catch(e) {}
+
+  state.loading = false;
+  render();
+
+  // Poll every 10s
+  setInterval(async () => {
+    state.votes = await fetchVotes();
+    render();
+  }, 10000);
+}
+
+init();
+</script>
 </body>
 </html>
