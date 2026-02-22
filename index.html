@@ -75,6 +75,24 @@
     .vote-btn:disabled { cursor: not-allowed; }
 
     .footer { text-align: center; padding: 30px 16px 10px; color: #888; font-size: 12px; opacity: 0.6; }
+
+    /* ── Admin dashboard ── */
+    .admin-wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 40px; }
+    .admin-total { text-align: center; font-size: 15px; color: #888; margin-bottom: 24px; }
+    .admin-total strong { color: #1a1a2e; font-size: 22px; }
+    .admin-empty { text-align: center; color: #aaa; font-size: 16px; padding: 60px 0; }
+    .admin-row { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); padding: 16px 20px; margin-bottom: 14px; }
+    .admin-row-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .admin-rank { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
+    .admin-emoji { font-size: 26px; width: 40px; text-align: center; flex-shrink: 0; }
+    .admin-name { font-size: 16px; font-weight: 700; color: #1a1a2e; flex: 1; font-family: 'Rubik', sans-serif; }
+    .admin-count { font-size: 18px; font-weight: 800; flex-shrink: 0; }
+    .admin-bar-bg { height: 18px; background: #f0f0f0; border-radius: 9px; overflow: hidden; margin-bottom: 10px; }
+    .admin-bar-fill { height: 100%; border-radius: 9px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+    .admin-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .admin-chip { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 8px; border: 1.5px solid; background: rgba(255,255,255,0.9); }
+    .admin-refresh { display: block; margin: 0 auto 20px; padding: 8px 22px; background: rgba(26,26,46,0.07); border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Heebo',sans-serif; color: #444; cursor: pointer; transition: background 0.2s; }
+    .admin-refresh:hover { background: rgba(26,26,46,0.13); }
   </style>
 </head>
 <body>
@@ -212,7 +230,109 @@ function h(tag, attrs, ...children) {
   return el;
 }
 
-function render() {
+// ── ADMIN DASHBOARD ──────────────────────────────────────────────
+function renderAdmin() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  if (state.loading) {
+    app.appendChild(
+      h("div", { className: "loading-screen" },
+        h("div", { className: "loading-spinner" }, "🏀"),
+        h("p", { style: { color:"#fff", fontFamily:"inherit", marginTop:"16px" } }, "טוען...")
+      )
+    );
+    return;
+  }
+
+  const total = getTotalVotes();
+  const winner = getWinner();
+
+  // Header
+  app.appendChild(
+    h("div", { className: "header" },
+      h("div", { className: "header-emoji" }, "📊"),
+      h("h1", null, "תוצאות הצבעה"),
+      h("p", { className: "header-sub" }, "תאי צפייה • עונת 2025-2026"),
+      h("span", { className: "header-badge" }, "🔐 מצב מנהל")
+    )
+  );
+
+  const wrap = h("div", { className: "admin-wrap" });
+
+  // Refresh button
+  const refreshBtn = h("button", { className: "admin-refresh",
+    onClick: async () => { state.votes = await fetchVotes(); renderAdmin(); }
+  }, "🔄 רענן תוצאות");
+  wrap.appendChild(refreshBtn);
+
+  // Total count
+  wrap.appendChild(
+    h("div", { className: "admin-total" },
+      h("strong", null, String(total)),
+      " הצבעות סה\"כ"
+    )
+  );
+
+  if (total === 0) {
+    wrap.appendChild(h("div", { className: "admin-empty" }, "⏳ עדיין אין הצבעות..."));
+  } else {
+    // Sort menus by vote count descending, skip zero-vote menus
+    const sorted = MENUS
+      .map(m => ({ menu: m, voters: getMenuVotes(m.id) }))
+      .filter(x => x.voters.length > 0)
+      .sort((a, b) => b.voters.length - a.voters.length);
+
+    const maxVotes = sorted[0].voters.length;
+    const RANK_ICONS = ["🥇", "🥈", "🥉"];
+
+    sorted.forEach(({ menu, voters }, idx) => {
+      const pct = Math.round((voters.length / total) * 100);
+      const isWinner = menu.id === winner;
+
+      const row = h("div", { className: "admin-row" });
+      if (isWinner) row.style.border = `2px solid ${menu.color}`;
+
+      // Top row: rank · emoji · name · count
+      const rowTop = h("div", { className: "admin-row-top" },
+        h("div", { className: "admin-rank" }, RANK_ICONS[idx] || `${idx + 1}`),
+        h("div", { className: "admin-emoji" }, menu.emoji),
+        h("div", { className: "admin-name" }, menu.name),
+        h("div", { className: "admin-count", style: { color: menu.color } },
+          `${voters.length} (${pct}%)`
+        )
+      );
+      row.appendChild(rowTop);
+
+      // Bar
+      const barBg = h("div", { className: "admin-bar-bg" });
+      const fill = h("div", { className: "admin-bar-fill" });
+      fill.style.width = Math.round((voters.length / maxVotes) * 100) + "%";
+      fill.style.background = `linear-gradient(90deg, ${menu.color}, ${menu.color}bb)`;
+      barBg.appendChild(fill);
+      row.appendChild(barBg);
+
+      // Voter name chips
+      const chips = h("div", { className: "admin-chips" },
+        ...voters.map(name => {
+          const chip = h("span", { className: "admin-chip" }, name);
+          chip.style.borderColor = menu.color;
+          chip.style.color = menu.color;
+          return chip;
+        })
+      );
+      row.appendChild(chips);
+
+      wrap.appendChild(row);
+    });
+  }
+
+  wrap.appendChild(h("div", { className: "footer" }, "Daily Events • תאי צפייה עונת 2025-2026"));
+  app.appendChild(wrap);
+}
+
+// ── VOTER PAGE ────────────────────────────────────────────────────
+function renderVoter() {
   const app = document.getElementById("app");
   app.innerHTML = "";
 
@@ -260,18 +380,6 @@ function render() {
     );
   }
 
-  // Results toggle — only visible to admin
-  let resultsToggle = null;
-  if (isAdmin && total > 0) {
-    const btn = h("div", { className: "section" },
-      h("button", {
-        className: "results-toggle",
-        onClick: () => { state.showResults = !state.showResults; render(); }
-      }, state.showResults ? "🙈 הסתר תוצאות" : `📊 הצג תוצאות (${total} הצבעות)`)
-    );
-    resultsToggle = btn;
-  }
-
   // Common items
   const common = h("div", { className: "common-banner" },
     h("div", { className: "common-title" }, "🍻 מה כולם מקבלים?"),
@@ -287,13 +395,10 @@ function render() {
       const isExpanded = state.expandedCard === menu.id;
       const isMyVote = state.myVote === menu.id;
       const isWinner = winner === menu.id && total >= 2;
-      const votePercent = total > 0 ? Math.round((menuVotes.length / total) * 100) : 0;
 
       const card = h("div", {
         className: "menu-card",
-        style: {
-          border: isMyVote ? `3px solid ${menu.color}` : "3px solid transparent",
-        }
+        style: { border: isMyVote ? `3px solid ${menu.color}` : "3px solid transparent" }
       });
 
       if (isWinner) card.appendChild(h("div", { className: "winner-badge" }, "👑 מוביל"));
@@ -303,10 +408,9 @@ function render() {
         card.appendChild(mb);
       }
 
-      // Card header (clickable to expand)
       const cardHeader = h("div", {
         className: "card-header",
-        onClick: () => { state.expandedCard = isExpanded ? null : menu.id; render(); }
+        onClick: () => { state.expandedCard = isExpanded ? null : menu.id; renderVoter(); }
       });
 
       const emojiBox = h("div", { className: "menu-emoji-box" }, menu.emoji);
@@ -319,58 +423,36 @@ function render() {
       const expandIcon = h("button", { className: "expand-icon" }, "▼");
       expandIcon.style.transform = isExpanded ? "rotate(180deg)" : "rotate(0deg)";
 
-      const cardTop = h("div", { className: "card-top" },
-        emojiBox,
-        h("div", { className: "card-title-area" },
-          h("div", { className: "menu-name" }, menu.name),
-          h("div", null, catBadge)
-        ),
-        expandIcon
+      cardHeader.appendChild(
+        h("div", { className: "card-top" },
+          emojiBox,
+          h("div", { className: "card-title-area" },
+            h("div", { className: "menu-name" }, menu.name),
+            h("div", null, catBadge)
+          ),
+          expandIcon
+        )
       );
-
-      cardHeader.appendChild(cardTop);
       cardHeader.appendChild(h("p", { className: "main-dish" }, menu.main));
-
-      if (state.showResults && menuVotes.length > 0) {
-        const barContainer = h("div", { className: "vote-bar-container" });
-        const bar = h("div", { className: "vote-bar" });
-        bar.style.width = Math.max(votePercent, 8) + "%";
-        bar.style.background = `linear-gradient(90deg, ${menu.color}, ${menu.color}cc)`;
-        barContainer.appendChild(bar);
-        barContainer.appendChild(h("span", { className: "vote-count" }, `${menuVotes.length} (${votePercent}%)`));
-        cardHeader.appendChild(barContainer);
-
-        const voterNames = h("div", { className: "voter-names" },
-          ...menuVotes.map(name => {
-            const chip = h("span", { className: "voter-chip" }, name);
-            chip.style.borderColor = menu.color;
-            chip.style.color = menu.color;
-            return chip;
-          })
-        );
-        cardHeader.appendChild(voterNames);
-      }
-
       card.appendChild(cardHeader);
 
-      // Expanded details
       if (isExpanded) {
-        const expanded = h("div", { className: "expanded-content" },
-          h("div", { className: "detail-section" },
-            h("div", { className: "detail-label" }, "📋 תיאור"),
-            h("p", { className: "detail-text" }, menu.description)
-          ),
-          ...(menu.sides.length > 0 ? [
+        card.appendChild(
+          h("div", { className: "expanded-content" },
             h("div", { className: "detail-section" },
-              h("div", { className: "detail-label" }, "🍟 תוספות"),
-              ...menu.sides.map(side => h("p", { className: "side-item" }, "• " + side))
-            )
-          ] : [])
+              h("div", { className: "detail-label" }, "📋 תיאור"),
+              h("p", { className: "detail-text" }, menu.description)
+            ),
+            ...(menu.sides.length > 0 ? [
+              h("div", { className: "detail-section" },
+                h("div", { className: "detail-label" }, "🍟 תוספות"),
+                ...menu.sides.map(side => h("p", { className: "side-item" }, "• " + side))
+              )
+            ] : [])
+          )
         );
-        card.appendChild(expanded);
       }
 
-      // Vote button
       if (state.voterName.trim()) {
         const btn = h("button", {
           className: "vote-btn",
@@ -386,14 +468,15 @@ function render() {
     })
   );
 
-  const footer = h("div", { className: "footer" }, "Daily Events • תאי צפייה עונת 2025-2026");
-
   app.appendChild(header);
   app.appendChild(nameSection);
-  if (resultsToggle) app.appendChild(resultsToggle);
   app.appendChild(common);
   app.appendChild(grid);
-  app.appendChild(footer);
+  app.appendChild(h("div", { className: "footer" }, "Daily Events • תאי צפייה עונת 2025-2026"));
+}
+
+function render() {
+  isAdmin ? renderAdmin() : renderVoter();
 }
 
 // ---------- Init ----------
