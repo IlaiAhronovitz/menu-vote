@@ -129,16 +129,20 @@ let state = {
   submitting: false,
 };
 
-// ---------- Storage (GitHub API – full CORS) ----------
-let _currentSha = null;
+// ---------- Storage (GitHub API – full CORS, no caching) ----------
 
+// Always read via the authenticated API — never cached, always fresh
 async function fetchVotes() {
   try {
-    // Use raw URL (no auth needed, CORS *) for reading
-    const res = await fetch(
-      "https://raw.githubusercontent.com/IlaiAhronovitz/menu-vote/main/votes.json?t=" + Date.now()
-    );
-    const data = await res.json();
+    const res = await fetch(GH_API, {
+      headers: {
+        "Authorization": "Bearer " + GH_TOKEN,
+        "Accept": "application/vnd.github+json",
+        "Cache-Control": "no-cache"
+      }
+    });
+    const file = await res.json();
+    const data = JSON.parse(atob(file.content));
     return data.votes || {};
   } catch(e) {
     console.error("fetchVotes error", e);
@@ -146,31 +150,42 @@ async function fetchVotes() {
   }
 }
 
-async function getSha() {
-  try {
-    const res = await fetch(GH_API, {
-      headers: { "Authorization": "Bearer " + GH_TOKEN, "Accept": "application/vnd.github+json" }
-    });
-    const data = await res.json();
-    return data.sha;
-  } catch(e) { return null; }
+// Returns { votes, sha } together so we never need a separate getSha call
+async function fetchFile() {
+  const res = await fetch(GH_API, {
+    headers: {
+      "Authorization": "Bearer " + GH_TOKEN,
+      "Accept": "application/vnd.github+json",
+      "Cache-Control": "no-cache"
+    }
+  });
+  const file = await res.json();
+  const data = JSON.parse(atob(file.content));
+  return { votes: data.votes || {}, sha: file.sha };
 }
 
 async function saveVotes(votes) {
-  try {
-    const sha = await getSha();
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify({ votes }, null, 2))));
-    await fetch(GH_API, {
-      method: "PUT",
-      headers: {
-        "Authorization": "Bearer " + GH_TOKEN,
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: "vote update", content, sha })
-    });
-  } catch(e) {
-    console.error("saveVotes error", e);
+  // Retry up to 3 times to handle SHA conflicts from simultaneous votes
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { sha } = await fetchFile();
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify({ votes }, null, 2))));
+      const res = await fetch(GH_API, {
+        method: "PUT",
+        headers: {
+          "Authorization": "Bearer " + GH_TOKEN,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: "vote update", content, sha })
+      });
+      if (res.status === 200 || res.status === 201) return; // success
+      if (res.status === 409) continue; // SHA conflict – retry with fresh SHA
+      console.error("saveVotes unexpected status", res.status);
+      return;
+    } catch(e) {
+      console.error("saveVotes error", e);
+    }
   }
 }
 
@@ -195,9 +210,11 @@ async function submitVote(menuId) {
   state.submitting = true;
   render();
 
-  const latest = await fetchVotes();
+  // Fetch fresh data from GitHub (not cached) right before writing
+  const { votes: latest } = await fetchFile();
   const newVotes = { ...latest };
 
+  // Remove previous vote for this person
   if (state.myVote) {
     const pk = String(state.myVote);
     if (newVotes[pk]) {
@@ -206,6 +223,7 @@ async function submitVote(menuId) {
     }
   }
 
+  // Add new vote
   const key = String(menuId);
   if (!newVotes[key]) newVotes[key] = [];
   if (!newVotes[key].includes(state.voterName.trim())) {
@@ -214,7 +232,8 @@ async function submitVote(menuId) {
 
   await saveVotes(newVotes);
 
-  state.votes = newVotes;
+  // Re-fetch the actual stored file so we see all votes (not just ours)
+  state.votes = await fetchVotes();
   state.myVote = menuId;
   state.hasVoted = true;
   state.submitting = false;
