@@ -97,6 +97,9 @@ const MENUS = [
 ];
 
 // ---------- State ----------
+const ADMIN_SECRET = "dailyevents";
+const isAdmin = new URLSearchParams(window.location.search).get("admin") === ADMIN_SECRET;
+
 let state = {
   votes: {},
   voterName: "",
@@ -104,7 +107,7 @@ let state = {
   myVote: null,
   expandedCard: null,
   loading: true,
-  showResults: false,
+  showResults: isAdmin, // auto-show results for admin, hidden for everyone else
   submitting: false,
 };
 
@@ -257,9 +260,9 @@ function render() {
     );
   }
 
-  // Results toggle
+  // Results toggle — only visible to admin
   let resultsToggle = null;
-  if (total > 0) {
+  if (isAdmin && total > 0) {
     const btn = h("div", { className: "section" },
       h("button", {
         className: "results-toggle",
