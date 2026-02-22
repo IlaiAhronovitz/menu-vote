@@ -1,0 +1,28 @@
+name: Update Votes
+
+on:
+  repository_dispatch:
+    types: [vote]
+
+jobs:
+  update-votes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update votes.json
+        run: |
+          echo '${{ toJson(github.event.client_payload.votes) }}' > /tmp/new_votes.json
+          echo '{"votes":' > votes.json
+          cat /tmp/new_votes.json >> votes.json
+          echo '}' >> votes.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add votes.json
+          git diff --staged --quiet || git commit -m "Update votes"
+          git push

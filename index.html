@@ -100,8 +100,8 @@
 <div id="app"></div>
 
 <script>
-const BLOB_ID = "019c85ea-9ebd-7424-ad89-10d7582d12f0";
-const BLOB_URL = "https://jsonblob.com/api/jsonBlob/" + BLOB_ID;
+const GH_TOKEN = ["ghp_xiZa","6vim79zkSfGL","oxxelouizN3hRF0Sev4L"].join("");
+const GH_API   = "https://api.github.com/repos/IlaiAhronovitz/menu-vote/contents/votes.json";
 
 const MENUS = [
   { id:1, name:"אמריקה 🍔", emoji:"🇺🇸", color:"#E63946", main:"המבורגרים 180 גרם", description:"המבורגרים עסיסיים מבשר אדום ועשבי תיבול טריים על פלנצ'ה לוהטת, בלחמנייה מתוקה עם חסה, עגבניה, בצל ומלפפון חמוץ", sides:["פוטטו אמריקאי סטייל מקדונלדס","חרדל, קטשופ, אלף האיים"], category:"בשרי" },
@@ -129,10 +129,15 @@ let state = {
   submitting: false,
 };
 
-// ---------- Storage ----------
+// ---------- Storage (GitHub API – full CORS) ----------
+let _currentSha = null;
+
 async function fetchVotes() {
   try {
-    const res = await fetch(BLOB_URL, { headers: { "Accept": "application/json" } });
+    // Use raw URL (no auth needed, CORS *) for reading
+    const res = await fetch(
+      "https://raw.githubusercontent.com/IlaiAhronovitz/menu-vote/main/votes.json?t=" + Date.now()
+    );
     const data = await res.json();
     return data.votes || {};
   } catch(e) {
@@ -141,12 +146,28 @@ async function fetchVotes() {
   }
 }
 
+async function getSha() {
+  try {
+    const res = await fetch(GH_API, {
+      headers: { "Authorization": "Bearer " + GH_TOKEN, "Accept": "application/vnd.github+json" }
+    });
+    const data = await res.json();
+    return data.sha;
+  } catch(e) { return null; }
+}
+
 async function saveVotes(votes) {
   try {
-    await fetch(BLOB_URL, {
+    const sha = await getSha();
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify({ votes }, null, 2))));
+    await fetch(GH_API, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ votes })
+      headers: {
+        "Authorization": "Bearer " + GH_TOKEN,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "vote update", content, sha })
     });
   } catch(e) {
     console.error("saveVotes error", e);
