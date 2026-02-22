@@ -131,26 +131,17 @@ let state = {
 
 // ---------- Storage (GitHub API – full CORS, no caching) ----------
 
-// Always read via the authenticated API — never cached, always fresh
-async function fetchVotes() {
-  try {
-    const res = await fetch(GH_API, {
-      headers: {
-        "Authorization": "Bearer " + GH_TOKEN,
-        "Accept": "application/vnd.github+json",
-        "Cache-Control": "no-cache"
-      }
-    });
-    const file = await res.json();
-    const data = JSON.parse(atob(file.content));
-    return data.votes || {};
-  } catch(e) {
-    console.error("fetchVotes error", e);
-    return {};
-  }
+// GitHub returns base64 with newlines — strip them before decoding
+function ghDecode(b64) {
+  return JSON.parse(atob(b64.replace(/\n/g, "")));
 }
 
-// Returns { votes, sha } together so we never need a separate getSha call
+// Encode to base64 safely (handles Hebrew / UTF-8)
+function ghEncode(obj) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 2))));
+}
+
+// Returns { votes, sha } — always fresh, never cached
 async function fetchFile() {
   const res = await fetch(GH_API, {
     headers: {
@@ -159,17 +150,27 @@ async function fetchFile() {
       "Cache-Control": "no-cache"
     }
   });
+  if (!res.ok) throw new Error("fetchFile HTTP " + res.status);
   const file = await res.json();
-  const data = JSON.parse(atob(file.content));
+  const data = ghDecode(file.content);
   return { votes: data.votes || {}, sha: file.sha };
 }
 
+async function fetchVotes() {
+  try {
+    const { votes } = await fetchFile();
+    return votes;
+  } catch(e) {
+    console.error("fetchVotes error", e);
+    return {};
+  }
+}
+
 async function saveVotes(votes) {
-  // Retry up to 3 times to handle SHA conflicts from simultaneous votes
-  for (let attempt = 0; attempt < 3; attempt++) {
+  // Retry up to 4 times on SHA conflict (happens when two people vote simultaneously)
+  for (let attempt = 0; attempt < 4; attempt++) {
     try {
       const { sha } = await fetchFile();
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify({ votes }, null, 2))));
       const res = await fetch(GH_API, {
         method: "PUT",
         headers: {
@@ -177,16 +178,17 @@ async function saveVotes(votes) {
           "Accept": "application/vnd.github+json",
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ message: "vote update", content, sha })
+        body: JSON.stringify({ message: "vote", content: ghEncode({ votes }), sha })
       });
-      if (res.status === 200 || res.status === 201) return; // success
-      if (res.status === 409) continue; // SHA conflict – retry with fresh SHA
-      console.error("saveVotes unexpected status", res.status);
-      return;
+      if (res.status === 200 || res.status === 201) return true;
+      if (res.status === 409) { await new Promise(r => setTimeout(r, 500)); continue; }
+      console.error("saveVotes status", res.status, await res.text());
+      return false;
     } catch(e) {
       console.error("saveVotes error", e);
     }
   }
+  return false;
 }
 
 // ---------- Helpers ----------
